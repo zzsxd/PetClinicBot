@@ -35,6 +35,8 @@ def main():
 
         elif call.data == 'zapis':
             bot.send_message(call.message.chat.id, 'Запись пациента')
+        elif call.data == 'add':
+            bot.send_message(call.message.chat.id, 'Добавить пациента')
 
     bot.polling(none_stop=True)
 

@@ -12,8 +12,6 @@ import datetime
 
 
 class Bot_inline_btns:
-
-
     def __init__(self):
         super(Bot_inline_btns, self).__init__()
         self.__markup = types.InlineKeyboardMarkup(row_width=1)
@@ -22,6 +20,7 @@ class Bot_inline_btns:
         calendar = types.InlineKeyboardButton('Календарь', callback_data='calendar')
         search =  types.InlineKeyboardButton('Поиск пациента', callback_data='search')
         zapis = types.InlineKeyboardButton('Запись пациента', callback_data='zapis')
+        add = types.InlineKeyboardButton('Новый пациент', callback_data='add')
         self.__markup.add(calendar, search, zapis)
         return self.__markup
 
