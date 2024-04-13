@@ -31,6 +31,11 @@ class Bot_inline_btns:
             self.__markup.add(button)
             return self.__markup
 
+    def change_pidor_btns(self, id):
+        zapis = types.InlineKeyboardButton('добавить анализы', callback_data=f'change{id}')
+        self.__markup.add(zapis)
+        return self.__markup
+
     def calendar_month(self):
         for month in range(1, 13):
             button = types.InlineKeyboardButton(text=datetime.date(current_date.year, month, 1).strftime("%B"),
