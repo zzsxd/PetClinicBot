@@ -25,8 +25,8 @@ class Bot_inline_btns:
         return self.__markup
 
 
-    def change_pidor_btns(self, id):
+    def change_pidor_btns(self, id, gay):
         zapis = types.InlineKeyboardButton('Добавить анализы', callback_data=f'change{id}')
-        export = types.InlineKeyboardButton('Экспорт в PDF', callback_data='export')
+        export = types.InlineKeyboardButton('Экспорт в PDF', callback_data=f'export{gay}')
         self.__markup.add(zapis, export)
         return self.__markup

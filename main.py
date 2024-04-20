@@ -25,6 +25,7 @@ import os
 import telebot
 import platform
 import json
+import copy
 import base64
 import datetime
 import calendar
@@ -37,16 +38,27 @@ from frontend import Bot_inline_btns
 from db import DB
 
 
-def cart_visualize(data, s=''):
+def cart_visualize(user_id, animals, s=''):
     fields = {0: 'Кличка', 1: 'Номер телефона', 2: 'Жалобы', 3: 'Рентген', 4: 'Узи', 5: 'Диагноз', 6: 'Операции'}
+    buttons = Bot_inline_btns()
+    photos = list()
     # На индексе 7 в этом цикле появляется массив с фотограиями в виде байт строки, я не знаю как их отправить в
     # сообщении (их много)
-    for index, el in enumerate(data):
-        if index == 7:
-            photos = json.loads(el)
-        else:
-            s += f'<b>{fields[index]}</b> {el}\n'
-    return s
+    temp_user_data.temp_data(user_id)[user_id][3] = copy.deepcopy({})
+    for index, pidor in enumerate(animals):
+        for index, el in enumerate(pidor[1:]):
+            if index == 7:
+                temp = json.loads(el)
+                for i in temp:
+                    photos.append(telebot.types.InputMediaPhoto(i))
+            else:
+                s += f'<b>{fields[index]}</b> {el}\n'
+        if len(photos) != 0:
+            bot.send_media_group(user_id, media=photos)
+            temp_user_data.temp_data(user_id)[user_id][3].update({index: [temp, s]})
+        temp_user_data.temp_data(user_id)[user_id][3].update({index: [None, s]})
+        bot.send_message(user_id, f'Карта больного:\n\n{s}',
+                         parse_mode='html', reply_markup=buttons.change_pidor_btns(pidor[0], index))
 
 
 def main():
@@ -123,9 +135,7 @@ def main():
                         animals = db_actions.get_animal(user_input)
                         if len(animals) != 0:
                             temp_user_data.temp_data(user_id)[user_id][0] = None
-                            for pidor in animals:
-                                bot.send_message(user_id, f'Карта больного:\n\n{cart_visualize(pidor[1:])}',
-                                                 parse_mode='html', reply_markup=buttons.change_pidor_btns(pidor[0]))
+                            cart_visualize(user_id, animals)
                         else:
                             bot.send_message(user_id, 'Животное не найдено')
                     else:
@@ -154,7 +164,8 @@ def main():
             elif call.data == 'zapis':
                 temp_user_data.temp_data(user_id)[user_id][0] = 0
                 bot.send_message(call.message.chat.id, 'Введите кличку животного')
-            elif call.data == 'export':
+            elif call.data[:6] == 'export':
+                data = temp_user_data.temp_data(user_id)[user_id][3][int(call.data[6:])] # [list->photos, str->text]
                 pdf_creator.create_pdf()
                 with open("plan.pdf", "rb") as misc:
                     obj = BytesIO(misc.read())

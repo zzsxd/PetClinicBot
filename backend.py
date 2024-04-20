@@ -3,12 +3,8 @@
 #               zzsxd               #
 #               SBR                 #
 #####################################
-
 import json
-
 from fpdf import FPDF
-
-
 #####################################
 
 
@@ -19,7 +15,7 @@ class TempUserData:
 
     def temp_data(self, user_id):
         if user_id not in self.__user_data.keys():
-            self.__user_data.update({user_id: [None, [None, None, None, None, None, None, None], None]})
+            self.__user_data.update({user_id: [None, [None, None, None, None, None, None, None], None, None]})
         return self.__user_data
 
 
