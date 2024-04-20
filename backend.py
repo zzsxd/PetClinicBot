@@ -75,12 +75,16 @@ class PDFCreate: # создать PDF файл
     def __init__(self):
         super(PDFCreate, self).__init__()
 
-    def create_pdf(self):
+    def create_pdf(self, data):
         # Создаем PDF файл с дизайном
+        text = data[1]
+        print(text)
+        photos = data[0]
         pdf = FPDF()
-        pdf.add_font('Arial', '', 'arial.ttf', uni=True) # 'Arial' - название шрифта, 'ariat.ttf' - сам шрифт (должен быть в папке с файлами)
+        pdf.add_font('DejaVu', '', 'DejaVuSans.ttf', uni=True) # 'Arial' - название шрифта, 'ariat.ttf' - сам шрифт (должен быть в папке с файлами)
         pdf.add_page() # добавить страницу
         pdf.set_auto_page_break(auto=True, margin=15) # Включает или отключает режим автоматического разрыва страниц
-        pdf.cell(220, -125, '', 0, 1, 'C') #вставить текст "company name"
+        pdf.set_font('DejaVu', size=16)
+        pdf.multi_cell(w=0, h=10, txt=text, align='L') #вставить текст "company name"
         # Сохраняем изменения в PDF файле
-        pdf.output('plan.pdf') # вывод PDF файла на диск
+        pdf.output(name='plan.pdf') # вывод PDF файла на диск

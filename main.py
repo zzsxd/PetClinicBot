@@ -38,30 +38,60 @@ from frontend import Bot_inline_btns
 from db import DB
 
 
-def cart_visualize(user_id, animals, s=''):
+def cart_visualize(user_id, animals, s='', raw_s=''):
     fields = {0: 'Кличка', 1: 'Номер телефона', 2: 'Жалобы', 3: 'Рентген', 4: 'Узи', 5: 'Диагноз', 6: 'Операции'}
     buttons = Bot_inline_btns()
     photos = list()
+    raw = list()
     # На индексе 7 в этом цикле появляется массив с фотограиями в виде байт строки, я не знаю как их отправить в
     # сообщении (их много)
     temp_user_data.temp_data(user_id)[user_id][3] = copy.deepcopy({})
     for index, pidor in enumerate(animals):
         for index, el in enumerate(pidor[1:]):
             if index == 7:
-                temp = json.loads(el)
-                for i in temp:
-                    photos.append(telebot.types.InputMediaPhoto(i))
+                for i in json.loads(el):
+                    raw.append(base64.b64decode(i))
+                    photos.append(telebot.types.InputMediaPhoto(base64.b64decode(i)))
             else:
                 s += f'<b>{fields[index]}</b> {el}\n'
+                raw_s += f'{fields[index]}: {el}\n'
         if len(photos) != 0:
             bot.send_media_group(user_id, media=photos)
-            temp_user_data.temp_data(user_id)[user_id][3].update({index: [temp, s]})
-        temp_user_data.temp_data(user_id)[user_id][3].update({index: [None, s]})
+            temp_user_data.temp_data(user_id)[user_id][3].update({index: [raw, raw_s]})
+        temp_user_data.temp_data(user_id)[user_id][3].update({index: [None, raw_s]})
         bot.send_message(user_id, f'Карта больного:\n\n{s}',
                          parse_mode='html', reply_markup=buttons.change_pidor_btns(pidor[0], index))
 
 
+def show_month_selection(message):
+    markup = types.ReplyKeyboardMarkup(row_width=3)
+    user_id = message.chat.id
+    for month in MONTHS:
+        btn_month = types.KeyboardButton(month)
+        markup.add(btn_month)
+    temp_user_data.temp_data(user_id)[user_id][0] = 9
+    current_month = datetime.datetime.now().strftime("%B")
+    bot.send_message(chat_id=user_id, text=f"Выберите месяц (Текущий месяц: {current_month}):",
+                     reply_markup=markup)
+
+
+def show_date_selection(message, month, year, days_in_month):
+    markup = types.ReplyKeyboardMarkup(row_width=7)
+    for day in range(1, days_in_month + 1):
+        btn_day = types.KeyboardButton(str(day))
+        markup.add(btn_day)
+
+    bot.send_message(message.chat.id, f"Выберите день в {month}, {year}:", reply_markup=markup)
+
 def main():
+    @bot.message_handler(func=lambda message: message.text in MONTHS)
+    def handle_month_choice(message):
+        global month
+        month = message.text
+        current_year = datetime.datetime.now().year
+        days_in_month = calendar.monthrange(current_year, MONTHS.index(month) + 1)[1]
+        show_date_selection(message, month, current_year, days_in_month)
+
     @bot.message_handler(commands=['start'])
     def start_msg(message):
         user_id = message.from_user.id
@@ -149,6 +179,10 @@ def main():
                         bot.send_message(user_id, 'Операция совершена успешно!')
                     else:
                         bot.send_message(user_id, 'Неправильный ввод')
+                case 9:
+                    day = message.text
+                    selected_date = f"Вы выбрали {day}, {month}, {datetime.datetime.now().year}"
+                    bot.send_message(message.chat.id, selected_date)
 
     @bot.callback_query_handler(func=lambda call: True)
     def callback(call):
@@ -158,15 +192,14 @@ def main():
             if call.data == 'search':
                 temp_user_data.temp_data(user_id)[user_id][0] = 7
                 bot.send_message(call.message.chat.id, 'Введите кличку или номер животного')
-
             elif call.data == 'calendar':
-                show_month_selection(call.message.chat.id)
+                show_month_selection(call.message)
             elif call.data == 'zapis':
                 temp_user_data.temp_data(user_id)[user_id][0] = 0
                 bot.send_message(call.message.chat.id, 'Введите кличку животного')
             elif call.data[:6] == 'export':
-                data = temp_user_data.temp_data(user_id)[user_id][3][int(call.data[6:])] # [list->photos, str->text]
-                pdf_creator.create_pdf()
+                data = temp_user_data.temp_data(user_id)[user_id][3][int(call.data[6:])]  # [list->photos, str->text]
+                pdf_creator.create_pdf(data)
                 with open("plan.pdf", "rb") as misc:
                     obj = BytesIO(misc.read())
                     obj.name = 'plan.pdf'
@@ -176,38 +209,6 @@ def main():
                 temp_user_data.temp_data(user_id)[user_id][0] = 8
                 temp_user_data.temp_data(user_id)[user_id][2] = call.data[6:]
                 bot.send_message(user_id, 'Отправьте фото в формате .jpg')
-
-    def show_month_selection(message):
-        markup = types.ReplyKeyboardMarkup(row_width=3)
-        for month in MONTHS:
-            btn_month = types.KeyboardButton(month)
-            markup.add(btn_month)
-
-        current_month = datetime.datetime.now().strftime("%B")
-        bot.send_message(chat_id=message.chat.id, text=f"Выберите месяц (Текущий месяц: {current_month}):",
-                         reply_markup=markup)
-
-    @bot.message_handler(func=lambda message: message.text in MONTHS)
-    def handle_month_choice(message):
-        global month
-        month = message.text
-        current_year = datetime.datetime.now().year
-        days_in_month = calendar.monthrange(current_year, MONTHS.index(month) + 1)[1]
-        show_date_selection(message, month, current_year, days_in_month)
-
-    def show_date_selection(message, month, year, days_in_month):
-        markup = types.ReplyKeyboardMarkup(row_width=7)
-        for day in range(1, days_in_month + 1):
-            btn_day = types.KeyboardButton(str(day))
-            markup.add(btn_day)
-
-        bot.send_message(message.chat.id, f"Выберите день в {month}, {year}:", reply_markup=markup)
-
-    @bot.message_handler(func=lambda message: True)
-    def handle_date_choice(message):
-        day = message.text
-        selected_date = f"Вы выбрали {day}, {month}, {datetime.datetime.now().year}"
-        bot.send_message(message.chat.id, selected_date)
 
     bot.polling(none_stop=True)
 
