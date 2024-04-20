@@ -4,10 +4,9 @@
 #               SBR                 #
 #####################################
 
-import os
-import time
 import json
-import csv
+
+from fpdf import FPDF
 
 
 #####################################
@@ -49,7 +48,6 @@ class DbAct:
                 status = True
             else:
                 status = False
-            print(status)
             return status
 
     def user_is_admin(self, user_id):
@@ -76,3 +74,17 @@ class DbAct:
         photos.append(new_dick)
         photos = json.dumps(photos)
         self.__db.db_write('UPDATE pidors SET photos = ? WHERE row_id = ?', (photos, pidor_id))
+
+class PDFCreate: # создать PDF файл
+    def __init__(self):
+        super(PDFCreate, self).__init__()
+
+    def create_pdf(self):
+        # Создаем PDF файл с дизайном
+        pdf = FPDF()
+        pdf.add_font('Arial', '', 'arial.ttf', uni=True) # 'Arial' - название шрифта, 'ariat.ttf' - сам шрифт (должен быть в папке с файлами)
+        pdf.add_page() # добавить страницу
+        pdf.set_auto_page_break(auto=True, margin=15) # Включает или отключает режим автоматического разрыва страниц
+        pdf.cell(220, -125, '', 0, 1, 'C') #вставить текст "company name"
+        # Сохраняем изменения в PDF файле
+        pdf.output('plan.pdf') # вывод PDF файла на диск
