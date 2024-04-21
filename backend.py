@@ -12,11 +12,28 @@ class TempUserData:
     def __init__(self):
         super(TempUserData, self).__init__()
         self.__user_data = {}
+        self.__month = [
+                "январь",
+                "февраль",
+                "март",
+                "апрель",
+                "май",
+                "июнь",
+                "июль",
+                "август",
+                "сентябрь",
+                "октябрь",
+                "ноябрь",
+                "декабрь"
+            ]
 
     def temp_data(self, user_id):
         if user_id not in self.__user_data.keys():
-            self.__user_data.update({user_id: [None, [None, None, None, None, None, None, None], None, None]})
+            self.__user_data.update({user_id: [None, [None, None, None, None, None, None, None], None, None, None, None, None, None]})
         return self.__user_data
+
+    def get_month(self):
+        return self.__month
 
 
 class DbAct:
@@ -54,6 +71,9 @@ class DbAct:
             else:
                 status = False
             return status
+
+    def add_application(self, date, pidor_id, desc):
+        self.__db.db_write('INSERT INTO applications (pidor_id, description, date) VALUES (?, ?, ?)', (pidor_id, desc, date))
 
     def add_your_mom(self, data):
         data.append(json.dumps([]))
