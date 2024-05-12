@@ -22,29 +22,37 @@ class DB:
             self.__db = sqlite3.connect(self.__db_path, check_same_thread=False)
             self.__cursor = self.__db.cursor()
             self.__cursor.execute('''
-            CREATE TABLE users(
-            row_id INTEGER primary key autoincrement not null,
-            user_id INTEGER,
-            first_name TEXT,
-            last_name TEXT,
-            nick_name TEXT,
-            is_admin BOOL,
-            UNIQUE(user_id)
-            )
-            ''')
+                CREATE TABLE users(
+                row_id INTEGER primary key autoincrement not null,
+                user_id INTEGER,
+                first_name TEXT,
+                last_name TEXT,
+                nick_name TEXT,
+                is_admin BOOL,
+                UNIQUE(user_id)
+                )
+                ''')
             self.__cursor.execute('''
-                        CREATE TABLE pidors(
-                        row_id INTEGER primary key autoincrement not null,
-                        nickname TEXT,
-                        phone_number TEXT,
-                        complaint TEXT,
-                        xray TEXT,
-                        uzi TEXT,
-                        diagnosis TEXT,
-                        operation TEXT,
-                        photos TEXT
-                        )
-                        ''')
+                CREATE TABLE pidors(
+                row_id INTEGER primary key autoincrement not null,
+                nickname TEXT,
+                phone_number TEXT,
+                complaint TEXT,
+                xray TEXT,
+                uzi TEXT,
+                diagnosis TEXT,
+                operation TEXT,
+                photos TEXT
+                )
+                ''')
+            self.__cursor.execute('''
+                CREATE TABLE applications(
+                row_id INTEGER primary key autoincrement not null,
+                pidor_id TEXT,
+                description TEXT,
+                date DATE
+                )
+                ''')
             self.__db.commit()
         else:
             self.__db = sqlite3.connect(self.__db_path, check_same_thread=False)

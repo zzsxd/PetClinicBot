@@ -4,21 +4,6 @@
 #               SBR                 #
 #####################################
 config_name = 'secrets.json'
-MONTHS = [
-    "Январь",
-    "Февраль",
-    "Март",
-    "Апрель",
-    "Май",
-    "Июнь",
-    "Июль",
-    "Август",
-    "Сентябрь",
-    "Октябрь",
-    "Ноябрь",
-    "Декабрь"
-]
-
 #####################################
 
 import os
@@ -38,7 +23,7 @@ from frontend import Bot_inline_btns
 from db import DB
 
 
-def cart_visualize(user_id, animals, s='', raw_s=''):
+def cart_visualize(user_id, animals, flag, s='', raw_s=''):
     fields = {0: 'Кличка', 1: 'Номер телефона', 2: 'Жалобы', 3: 'Рентген', 4: 'Узи', 5: 'Диагноз', 6: 'Операции'}
     buttons = Bot_inline_btns()
     photos = list()
@@ -55,42 +40,21 @@ def cart_visualize(user_id, animals, s='', raw_s=''):
             else:
                 s += f'<b>{fields[index]}</b> {el}\n'
                 raw_s += f'{fields[index]}: {el}\n'
-        if len(photos) != 0:
-            bot.send_media_group(user_id, media=photos)
-            temp_user_data.temp_data(user_id)[user_id][3].update({index: [raw, raw_s]})
-        temp_user_data.temp_data(user_id)[user_id][3].update({index: [None, raw_s]})
-        bot.send_message(user_id, f'Карта больного:\n\n{s}',
-                         parse_mode='html', reply_markup=buttons.change_pidor_btns(pidor[0], index))
+        if not flag:
+            if len(photos) != 0:
+                bot.send_media_group(user_id, media=photos)
+                temp_user_data.temp_data(user_id)[user_id][3].update({index: [raw, raw_s]})
+            temp_user_data.temp_data(user_id)[user_id][3].update({index: [None, raw_s]})
+            bot.send_message(user_id, f'Карта больного:\n\n{s}',
+                             parse_mode='html', reply_markup=buttons.change_pidor_btns(pidor[0], index))
+        else:
+            if len(photos) != 0:
+                bot.send_media_group(user_id, media=photos)
+            bot.send_message(user_id, f'Карта больного:\n\n{s}',
+                             parse_mode='html', reply_markup=buttons.select_pidor_btns(pidor[0]))
 
-
-def show_month_selection(message):
-    markup = types.ReplyKeyboardMarkup(row_width=3)
-    user_id = message.chat.id
-    for month in MONTHS:
-        btn_month = types.KeyboardButton(month)
-        markup.add(btn_month)
-    temp_user_data.temp_data(user_id)[user_id][0] = 9
-    current_month = datetime.datetime.now().strftime("%B")
-    bot.send_message(chat_id=user_id, text=f"Выберите месяц (Текущий месяц: {current_month}):",
-                     reply_markup=markup)
-
-
-def show_date_selection(message, month, year, days_in_month):
-    markup = types.ReplyKeyboardMarkup(row_width=7)
-    for day in range(1, days_in_month + 1):
-        btn_day = types.KeyboardButton(str(day))
-        markup.add(btn_day)
-
-    bot.send_message(message.chat.id, f"Выберите день в {month}, {year}:", reply_markup=markup)
 
 def main():
-    @bot.message_handler(func=lambda message: message.text in MONTHS)
-    def handle_month_choice(message):
-        global month
-        month = message.text
-        current_year = datetime.datetime.now().year
-        days_in_month = calendar.monthrange(current_year, MONTHS.index(month) + 1)[1]
-        show_date_selection(message, month, current_year, days_in_month)
 
     @bot.message_handler(commands=['start'])
     def start_msg(message):
@@ -165,7 +129,7 @@ def main():
                         animals = db_actions.get_animal(user_input)
                         if len(animals) != 0:
                             temp_user_data.temp_data(user_id)[user_id][0] = None
-                            cart_visualize(user_id, animals)
+                            cart_visualize(user_id, animals, False)
                         else:
                             bot.send_message(user_id, 'Животное не найдено')
                     else:
@@ -180,20 +144,63 @@ def main():
                     else:
                         bot.send_message(user_id, 'Неправильный ввод')
                 case 9:
-                    day = message.text
-                    selected_date = f"Вы выбрали {day}, {month}, {datetime.datetime.now().year}"
-                    bot.send_message(message.chat.id, selected_date)
+                    if user_input.lower() in temp_user_data.get_month():
+                        temp_user_data.temp_data(user_id)[user_id][4] = temp_user_data.get_month().index(user_input)+1
+                        temp_user_data.temp_data(user_id)[user_id][0] = 10
+                        days = calendar.monthrange(datetime.datetime.now().year, temp_user_data.get_month().index(user_input)+1)[1]
+                        temp_user_data.temp_data(user_id)[user_id][5] = days
+                        bot.send_message(user_id, 'Выберите день', reply_markup=buttons.days_btns(days))
+                    else:
+                        bot.send_message(user_id, 'Вы ввели неправильный месяц')
+                case 10:
+                    try:
+                        if int(user_input) in range(1, temp_user_data.temp_data(user_id)[user_id][5]+1):
+                            temp_user_data.temp_data(user_id)[user_id][5] = user_input
+                            temp_user_data.temp_data(user_id)[user_id][0] = 11
+                            bot.send_message(user_id, 'Выберите время в формате XX:XX')
+                        else:
+                            bot.send_message(user_id, 'В этом месяце нет такого числа')
+                    except:
+                        bot.send_message(user_id, 'Это не число')
+                case 11:
+                    try:
+                        temp_user_data.temp_data(user_id)[user_id][6] = datetime.datetime.strptime(f'{temp_user_data.temp_data(user_id)[user_id][5]}{temp_user_data.temp_data(user_id)[user_id][4]}{datetime.datetime.now().year} {user_input}', "%d%m%Y %H:%M")
+                        temp_user_data.temp_data(user_id)[user_id][0] = 12
+                        bot.send_message(user_id, 'Введите кличку животного или номер телефона для поиска больного')
+                    except:
+                        bot.send_message(user_id, 'неправильное время')
+                case 12:
+                    if user_input is not None:
+                        animals = db_actions.get_animal(user_input)
+                        if len(animals) != 0:
+                            temp_user_data.temp_data(user_id)[user_id][0] = 13
+                            cart_visualize(user_id, animals, True)
+                        else:
+                            bot.send_message(user_id, 'Животное не найдено')
+                    else:
+                        bot.send_message(user_id, 'Неправильный ввод')
+                case 14:
+                    if user_input is not None:
+                        temp_user_data.temp_data(user_id)[user_id][0] = None
+                        db_actions.add_application(temp_user_data.temp_data(user_id)[user_id][6], temp_user_data.temp_data(user_id)[user_id][7], user_input)
+                        bot.send_message(user_id, 'Заметка успешно добавлена')
+                    else:
+                        bot.send_message(user_id, 'Неправильный ввод')
 
     @bot.callback_query_handler(func=lambda call: True)
     def callback(call):
         buttons = Bot_inline_btns()
         user_id = call.message.chat.id
         if db_actions.user_is_existed(user_id):
+            code = temp_user_data.temp_data(user_id)[user_id][0]
             if call.data == 'search':
                 temp_user_data.temp_data(user_id)[user_id][0] = 7
                 bot.send_message(call.message.chat.id, 'Введите кличку или номер животного')
             elif call.data == 'calendar':
-                show_month_selection(call.message)
+                temp_user_data.temp_data(user_id)[user_id][0] = 9
+                current_month = datetime.datetime.now().strftime("%B")
+                bot.send_message(chat_id=user_id, text=f"Выберите месяц (Текущий месяц: {current_month}):",
+                                 reply_markup=buttons.month_btns(temp_user_data.get_month()))
             elif call.data == 'zapis':
                 temp_user_data.temp_data(user_id)[user_id][0] = 0
                 bot.send_message(call.message.chat.id, 'Введите кличку животного')
@@ -209,6 +216,12 @@ def main():
                 temp_user_data.temp_data(user_id)[user_id][0] = 8
                 temp_user_data.temp_data(user_id)[user_id][2] = call.data[6:]
                 bot.send_message(user_id, 'Отправьте фото в формате .jpg')
+            elif call.data[:6] == 'select' and code == 13:
+                temp_user_data.temp_data(user_id)[user_id][0] = 14
+                temp_user_data.temp_data(user_id)[user_id][7] = call.data[6:]
+                bot.send_message(user_id, 'введите описание к заметке')
+
+
 
     bot.polling(none_stop=True)
 
