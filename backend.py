@@ -101,17 +101,17 @@ class PDFCreate: # создать PDF файл
         print(text)
         photos = data[0]
         pdf = FPDF()
-        pdf.add_font('DejaVu', '', 'DejaVuSans.ttf', uni=True) # 'Arial' - название шрифта, 'ariat.ttf' - сам шрифт (должен быть в папке с файлами)
+        pdf.add_font('Arial', '', 'arial.ttf', uni=True) # 'Arial' - название шрифта, 'ariat.ttf' - сам шрифт (должен быть в папке с файлами)
         pdf.add_page() # добавить страницу
         pdf.set_auto_page_break(auto=True, margin=15) # Включает или отключает режим автоматического разрыва страниц
-        pdf.set_font('DejaVu', size=16)
+        pdf.set_font('Arial', size=16)
         pdf.cell(0, 0, 'Ветеринарная Клиника ДианаВет', align="R")
         pdf.cell(0, 10, 'Улица Европейская,82 а', align="R")
         pdf.cell(0, 20, '+7 (990) 028-25-32', align="R")
         pdf.cell(0, 30, '+7 (990) 028-25-46', align="R")
         pdf.set_xy(60, 20)
         pdf.cell(0, 40, 'Ветеринарная карта животного', align="С")
-        pdf.set_font('DejaVu', size=16)
+        pdf.set_font('Arial', size=16)
         pdf.set_xy(0, 50)
         pdf.multi_cell(w=0, h=10, txt=text, align='L') # вставить текст
         # Сохраняем изменения в PDF файле
